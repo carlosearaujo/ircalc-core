@@ -7,6 +7,13 @@
 	<artifactId>ircalc-core</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
+	
+	<repositories>
+		<repository>
+			<id>simplequery</id>
+			<url>https://mymavenrepo.com/repo/6tfgPWh0Ku6A8IwypwfK</url>
+		</repository>
+	</repositories>
 
 	<name>ircalc-core</name>
 	<description>Demo project for Spring Boot</description>
@@ -25,6 +32,11 @@
 	</properties>
 
 	<dependencies>
+	
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -45,6 +57,23 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
+		<dependency>
+		    <groupId>com.fasterxml.jackson.datatype</groupId>
+		    <artifactId>jackson-datatype-hibernate5</artifactId>
+    	</dependency>
+    	
+    	<dependency>
+    		<groupId>com.simplequery</groupId>
+    		<artifactId>simplequery-core</artifactId>
+    		<version>1.0-SNAPSHOT</version>
+    	</dependency>
+    	
+    	<dependency>
+    		<groupId>com.simplequery</groupId>
+    		<artifactId>simplequery-core</artifactId>
+    		<version>1.0-SNAPSHOT</version>
+    	</dependency>
 	</dependencies>
 
 	<build>
