@@ -96,7 +96,7 @@ public class Trade {
 	}
 
 	public Double getTotalBrokerCost(){
-		return brokerTax * (1 + brokerTax);
+		return brokerTax * (1 + brokerTaxFee);
 	}
 	
 	public MarketDirection getMarketDirectionComplement(){

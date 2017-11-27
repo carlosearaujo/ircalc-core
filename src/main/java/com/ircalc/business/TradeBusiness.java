@@ -41,7 +41,6 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 
 	private void finalizeTrade(OpenTrade openTrade, Trade trade) {
 		FinalizedTrade finalizedTrade = new FinalizedTrade(openTrade, trade);
-		finalizedTrade.getReferencedTradesAVGPrice();
 		finalizedTradeRepository.save(finalizedTrade);
 		openTrade.decreaseOpenQuantity(trade.getQuantity());
 		if(openTrade.getOpenQuantity() <= 0){
