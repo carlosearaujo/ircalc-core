@@ -34,7 +34,7 @@ public class FinalizedTrade {
     }
 
     public Double getIR(){
-        return result() * closeTime.getTaxAliquot();
+        return result() > 0 ? result() * closeTime.getTaxAliquot() : 0;
     }
 
     public Double getReferencedTradesAVGPrice() {
