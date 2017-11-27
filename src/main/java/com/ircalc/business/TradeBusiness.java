@@ -12,6 +12,7 @@ import com.ircalc.repository.TradeRepository;
 import com.simplequery.GenericBusiness;
 
 import javax.transaction.Transactional;
+import java.util.List;
 
 /**@author carlos.araujo
    @since  17 de nov de 2017*/
@@ -51,5 +52,9 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	public void addOpenTrade(Trade trade){
 		OpenTrade newOpenTrade = new OpenTrade(trade);
 		openTradeRepository.save(newOpenTrade);
+	}
+
+	public List<FinalizedTrade> getFinalizedTrades(){
+		return finalizedTradeRepository.findAll();
 	}
 }

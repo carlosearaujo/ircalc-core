@@ -3,6 +3,7 @@ package com.ircalc.model;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ public class FinalizedTrade {
     private CloseTime closeTime;
 
     public FinalizedTrade(OpenTrade openTrade, Trade closeTrade) {
-        referencedTrades = openTrade.getReferenceTrades();
+        referencedTrades = new ArrayList<>(openTrade.getReferenceTrades());
         this.closeTrade = closeTrade;
         closeTime = CloseTime.NORMAL;
     }
