@@ -72,7 +72,7 @@ public class Trade {
 	private Double registrationFeeAliquot;
 
 	public Double getFinalPrice(){
-		return getPriceBeforeFees() + getTotalFees();
+		return getPriceBeforeFees() + (getTotalFees() * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
 	}
 
 	public Double getTotalFees(){
