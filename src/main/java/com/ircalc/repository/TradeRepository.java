@@ -5,9 +5,12 @@ import org.springframework.stereotype.Repository;
 
 import com.ircalc.model.Trade;
 
+import java.util.List;
+
 /**@author carlos.araujo
    @since  24 de nov de 2017*/
 @Repository
 public interface TradeRepository extends JpaRepository<Trade, Long>  {
 
+    List<Trade> findAllByOrderByDateAsc();
 }

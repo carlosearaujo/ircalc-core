@@ -24,7 +24,26 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	@Autowired private FinalizedTradeRepository finalizedTradeRepository;
 
 	@Transactional
-	public Trade save(Trade trade) {
+	public Trade save(Trade newTrade) {
+		tradeRepository.save(newTrade);
+		clearTradesStatus();
+		processTrades();
+		return  newTrade;
+	}
+
+	private void clearTradesStatus() {
+		openTradeRepository.deleteAll();
+		finalizedTradeRepository.deleteAll();
+	}
+
+	private void processTrades() {
+		List<Trade> orderedTrades = tradeRepository.findAllByOrderByDateAsc();
+		orderedTrades.forEach(trade -> {
+			processTrade(trade);
+		});
+	}
+
+	private void processTrade(Trade trade) {
 		OpenTrade ticketOpenTrade = openTradeRepository.findByTicket(trade.getTicket());
 		if(ticketOpenTrade != null){
 			if(ticketOpenTrade.getMarketDirection().equals(trade.getMarketDirection())){
@@ -37,7 +56,6 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		else{
 			addOpenTrade(trade);
 		}
-		return tradeRepository.save(trade);
 	}
 
 	private void finalizeTrade(OpenTrade openTrade, Trade trade) {
