@@ -11,6 +11,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -72,7 +73,7 @@ public class Trade {
 	private Double registrationFeeAliquot;
 
 	public Double getFinalPrice(){
-		return getPriceBeforeFees() + (getTotalFees() * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
+		return priceBeforeFees() + (getTotalFees() * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
 	}
 
 	public Double getTotalFees(){
@@ -80,19 +81,19 @@ public class Trade {
 	}
 
 	public Double avgBeforeFees(){
-		return getPriceBeforeFees() / quantity;
+		return priceBeforeFees() / quantity;
 	}
 
 	public Double avgFinalPrice(){
 		return getFinalPrice() / quantity;
 	}
 
-	public Double getPriceBeforeFees(){
+	public Double priceBeforeFees(){
 		return (pricePerUnit * quantity);
 	}
 
 	public Double getTotalMarketFees(){
-		return (exchangeFeeAliquot + dealFeeAliquot + registrationFeeAliquot) * getPriceBeforeFees();
+		return (exchangeFeeAliquot + dealFeeAliquot + registrationFeeAliquot) * priceBeforeFees();
 	}
 
 	public Double getTotalBrokerCost(){
@@ -116,7 +117,7 @@ public class Trade {
 		else{
 			exchangeFeeAliquot = DEFAULT_EXCHANGE_FEE_OPTION;
 			dealFeeAliquot = DEFAULT_DEAL_FEE_OPTION;
-			registrationFeeAliquot = DEFAULT_REGISTRATION_FEE;
+			registrationFeeAliquot = DEFAULT_REGISTRATION_FEE_OPTION;
 		}
 	}
 

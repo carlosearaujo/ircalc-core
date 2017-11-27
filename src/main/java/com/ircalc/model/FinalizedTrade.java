@@ -1,6 +1,8 @@
 package com.ircalc.model;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -9,7 +11,8 @@ import java.util.List;
 /**
  * Created by Carlos on 26/11/2017.
  */
-@Entity(name = "FINALIZED_TRADE") @NoArgsConstructor
+@Entity
+@Table(name = "FINALIZED_TRADE") @NoArgsConstructor @Getter @Setter
 public class FinalizedTrade {
 
     @Id
@@ -17,7 +20,8 @@ public class FinalizedTrade {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sqc_finalized_trade")
     private Long id;
 
-    @OneToMany @JoinTable(name = "FINALIZED_TRADE_TRADE_REL")
+    @OneToMany(fetch = FetchType.EAGER) 
+    @JoinTable(name = "FINALIZED_TRADE_TRADE_REL")
     private List<Trade> referencedTrades;
     @ManyToOne
     private Trade closeTrade;
@@ -30,12 +34,13 @@ public class FinalizedTrade {
         closeTime = CloseTime.NORMAL;
     }
 
-    public Double result() {
-        return closeTrade.getFinalPrice() - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
+    public Double getResult() {
+        Double result = closeTrade.getFinalPrice() - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
+        return MarketDirection.BUY.equals(closeTrade.getMarketDirection()) ? -result : result;
     }
 
     public Double getIR(){
-        return result() > 0 ? result() * closeTime.getTaxAliquot() : 0;
+        return getResult() > 0 ? getResult() * closeTime.getTaxAliquot() : 0;
     }
 
     public Double getReferencedTradesAVGPrice() {

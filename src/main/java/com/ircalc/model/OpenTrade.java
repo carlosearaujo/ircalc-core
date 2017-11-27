@@ -13,7 +13,8 @@ import java.util.List;
  */
 
 @Getter @Setter @NoArgsConstructor
-@Entity(name = "OPEN_TRADE")
+@Entity
+@Table(name = "OPEN_TRADE")
 public class OpenTrade {
 
 

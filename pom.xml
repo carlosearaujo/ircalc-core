@@ -16,7 +16,7 @@
 	</repositories>
 
 	<name>ircalc-core</name>
-	<description>Demo project for Spring Boot</description>
+	<description>IRCalc Core</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -37,6 +37,7 @@
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -66,7 +67,7 @@
 		
 		<dependency>
 		    <groupId>com.fasterxml.jackson.datatype</groupId>
-		    <artifactId>jackson-datatype-hibernate5</artifactId>
+            <artifactId>jackson-datatype-hibernate5</artifactId>
     	</dependency>
     	
     	<dependency>
