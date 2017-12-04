@@ -1,10 +1,12 @@
 package com.ircalc.repository;
 
+import com.ircalc.model.MarketDirection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.ircalc.model.Trade;
 
+import java.util.Date;
 import java.util.List;
 
 /**@author carlos.araujo
@@ -13,4 +15,6 @@ import java.util.List;
 public interface TradeRepository extends JpaRepository<Trade, Long>  {
 
     List<Trade> findAllByOrderByDateAsc();
+
+    Trade findByTicketAndDateAndMarketDirection(String ticket, Date date, MarketDirection marketDirection);
 }
