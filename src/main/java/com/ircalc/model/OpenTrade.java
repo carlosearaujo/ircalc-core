@@ -33,6 +33,8 @@ public class OpenTrade {
     private Long openQuantity;
     @Column
     private MarketDirection marketDirection;
+    @Column
+    private CloseTime closeTime;
 
     public OpenTrade(Trade origin){
         ticket = origin.getTicket();

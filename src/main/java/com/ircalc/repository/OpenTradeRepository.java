@@ -1,5 +1,6 @@
 package com.ircalc.repository;
 
+import com.ircalc.model.CloseTime;
 import com.ircalc.model.MarketDirection;
 import com.ircalc.model.OpenTrade;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,6 @@ import org.springframework.stereotype.Repository;
 public interface OpenTradeRepository extends JpaRepository<OpenTrade, Long> {
 
     OpenTrade findByTicket(String ticket);
+
+	OpenTrade findByTicketAndCloseTime(String ticket, CloseTime daytrade);
 }

@@ -13,8 +13,8 @@ import com.ircalc.repository.TradeRepository;
 import com.simplequery.GenericBusiness;
 
 import javax.transaction.Transactional;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**@author carlos.araujo
@@ -47,12 +47,8 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	}
 
 	private void processTrade(Trade trade) {
-		OpenTrade ticketOpenTrade = openTradeRepository.findByTicket(trade.getTicket());
-		Trade tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDateAndMarketDirection(trade.getTicket(), trade.getDate(), trade.getMarketDirectionComplement());
-		if(tradeWithSameTicketAndDay != null && trade.getId() > tradeWithSameTicketAndDay.getId()){
-			finalizeDayTrade(trade, tradeWithSameTicketAndDay);
-		}
-		else if(ticketOpenTrade != null){
+		OpenTrade ticketOpenTrade = getPriorityOpenTrade(trade);
+		if(ticketOpenTrade != null){
 			if(ticketOpenTrade.getMarketDirection().equals(trade.getMarketDirection())){
 				ticketOpenTrade.addNewReference(trade);
 			}
@@ -65,16 +61,32 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		}
 	}
 
-	private void finalizeDayTrade(Trade trade, Trade tradeWithSameTicketAndDay) {
-		FinalizedTrade finalizedTrade = new FinalizedTrade();
-		finalizedTrade.setCloseTime(CloseTime.DAYTRADE);
-		finalizedTrade.setCloseTrade(trade);
-		finalizedTrade.setReferencedTrades(Arrays.asList(tradeWithSameTicketAndDay));
-		finalizedTradeRepository.save(finalizedTrade);
+	private OpenTrade getPriorityOpenTrade(Trade trade) {
+		OpenTrade openDayTrade = openTradeRepository.findByTicketAndCloseTime(trade.getTicket(), CloseTime.DAYTRADE);
+		openDayTrade.getReferenceTrades().forEach(openReference ->{
+			if(!openReference.getDate().equals(trade)){
+				openTradeRepository.delete(openDayTrade);
+				processTrade(getResidualDayTrade(openDayTrade));
+			}
+		});
+		return openDayTrade != null ? openDayTrade : openTradeRepository.findByTicketAndCloseTime(trade.getTicket(), CloseTime.NORMAL);
+	}
+
+	private Trade getResidualDayTrade(OpenTrade openDayTrade) {
+		List<Long> openDayTradeReferenceIds = new ArrayList<>();
+		openDayTrade.getReferenceTrades().forEach(referenceTrade -> {
+			openDayTradeReferenceIds.add(referenceTrade.getId());
+		});
+		List<FinalizedTrade> finalizedTradesWithMatchReference = finalizedTradeRepository.findByCloseTradeIdIn(openDayTradeReferenceIds);
+		
+		return null;
 	}
 
 	private void finalizeTrade(OpenTrade openTrade, Trade trade) {
 		FinalizedTrade finalizedTrade = new FinalizedTrade(openTrade, trade);
+		finalizedTrade.setReferencedTrades(new ArrayList<>(openTrade.getReferenceTrades()));
+		finalizedTrade.setCloseTrade(trade);
+		finalizedTrade.setCloseTime(openTrade.getCloseTime());
 		finalizedTradeRepository.save(finalizedTrade);
 		openTrade.decreaseOpenQuantity(trade.getQuantity());
 		if(openTrade.getOpenQuantity() == 0){
@@ -84,6 +96,8 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 
 	public void addOpenTrade(Trade trade){
 		OpenTrade newOpenTrade = new OpenTrade(trade);
+		Trade tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDate(trade.getTicket(), trade.getDate());
+		newOpenTrade.setCloseTime(tradeWithSameTicketAndDay == null ? CloseTime.NORMAL : CloseTime.DAYTRADE);
 		openTradeRepository.save(newOpenTrade);
 	}
 
