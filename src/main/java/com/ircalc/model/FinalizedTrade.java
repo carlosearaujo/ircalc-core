@@ -36,9 +36,9 @@ public class FinalizedTrade {
 
     @OneToMany(fetch = FetchType.EAGER) 
     @JoinTable(name = "FINALIZED_TRADE_TRADE_REL")
-    private List<Trade> referencedTrades;
+    private List<VirtualTrade> referencedTrades;
     
-    @ManyToOne private Trade closeTrade;
+    @ManyToOne private VirtualTrade closeTrade;
     
     @Column private CloseTime closeTime;
     
@@ -48,13 +48,9 @@ public class FinalizedTrade {
 	
 	@Column(nullable = false)private Double registrationFeeAliquot;
 
-    public FinalizedTrade(OpenTrade openTrade, Trade closeTrade) {
-        
-    }
-
     public Double getResult() {
-        Double result = closeTrade.priceAfterFees(getTotalMarketFees(closeTrade)) - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
-        return MarketDirection.BUY.equals(closeTrade.getMarketDirection()) ? -result : result;
+        Double result = closeTrade.getTrade().priceAfterFees(getTotalMarketFees(closeTrade.getTrade())) - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
+        return MarketDirection.BUY.equals(closeTrade.getTrade().getMarketDirection()) ? -result : result;
     }
 
     public Double getIR(){
@@ -64,9 +60,9 @@ public class FinalizedTrade {
     public Double getReferencedTradesAVGPrice() {
         Long totalQuantity = 0L;
         Double totalCost = 0D;
-        for(Trade referencedTrade : referencedTrades){
-            totalQuantity += referencedTrade.getQuantity();
-            totalCost += referencedTrade.priceAfterFees(getTotalMarketFees(referencedTrade));
+        for(VirtualTrade virtualTrade : referencedTrades){
+            totalQuantity += virtualTrade.getQuantity();
+            totalCost += virtualTrade.getTrade().priceAfterFees(getTotalMarketFees(virtualTrade.getTrade()));
         }
         return totalCost / totalQuantity;
     }
@@ -80,7 +76,7 @@ public class FinalizedTrade {
 		updateFees();
 	}
 	
-	public void setCloseTrade(Trade closeTrade){
+	public void setCloseTrade(VirtualTrade closeTrade){
 		this.closeTrade = closeTrade;
 		updateFees();
 	}
@@ -89,7 +85,7 @@ public class FinalizedTrade {
 		if(closeTime == null || closeTrade == null){
 			return;
 		}
-		if(MarketType.DEFAULT.equals(closeTrade.getMarketType())){
+		if(MarketType.DEFAULT.equals(closeTrade.getTrade().getMarketType())){
 			if(CloseTime.NORMAL.equals(closeTime)){
 				exchangeFeeAliquot = DEFAULT_EXCHANGE_FEE;
 				dealFeeAliquot = DEFAULT_DEAL_FEE;

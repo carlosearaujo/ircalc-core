@@ -28,7 +28,7 @@ public class OpenTrade {
     private String ticket;
     @OneToMany
     @JoinTable(name =  "OPEN_TRADE_TRADE_REL")
-    private List<Trade> referenceTrades;
+    private List<VirtualTrade> referenceTrades;
     @Column
     private Long openQuantity;
     @Column
@@ -36,14 +36,14 @@ public class OpenTrade {
     @Column
     private CloseTime closeTime;
 
-    public OpenTrade(Trade origin){
-        ticket = origin.getTicket();
-        referenceTrades = new ArrayList<>(Arrays.asList(new Trade[]{origin}));
+    public OpenTrade(VirtualTrade origin){
+        ticket = origin.getTrade().getTicket();
+        referenceTrades = new ArrayList<>(Arrays.asList(new VirtualTrade[]{origin}));
         openQuantity = origin.getQuantity();
-        marketDirection = origin.getMarketDirection();
+        marketDirection = origin.getTrade().getMarketDirection();
     }
 
-    public void addNewReference(Trade trade) {
+    public void addNewReference(VirtualTrade trade) {
         openQuantity += trade.getQuantity();
         referenceTrades.add(trade);
     }

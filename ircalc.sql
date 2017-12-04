@@ -5,7 +5,7 @@
 -- Dumped from database version 10.1
 -- Dumped by pg_dump version 10.1
 
--- Started on 2017-12-04 07:57:31
+-- Started on 2017-12-04 20:32:05
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -23,7 +23,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- TOC entry 201 (class 1259 OID 57361)
+-- TOC entry 197 (class 1259 OID 57361)
 -- Name: trade; Type: TABLE; Schema: ircalc; Owner: postgres
 --
 
@@ -46,8 +46,8 @@ CREATE TABLE trade (
 ALTER TABLE trade OWNER TO postgres;
 
 --
--- TOC entry 2809 (class 0 OID 57361)
--- Dependencies: 201
+-- TOC entry 2814 (class 0 OID 57361)
+-- Dependencies: 197
 -- Data for Name: trade; Type: TABLE DATA; Schema: ircalc; Owner: postgres
 --
 
@@ -128,7 +128,7 @@ COPY trade (id, broker_tax, broker_tax_fee, date, deal_fee_aliquot, exchange_fee
 
 
 --
--- TOC entry 2687 (class 2606 OID 57365)
+-- TOC entry 2692 (class 2606 OID 57365)
 -- Name: trade trade_pkey; Type: CONSTRAINT; Schema: ircalc; Owner: postgres
 --
 
@@ -136,7 +136,7 @@ ALTER TABLE ONLY trade
     ADD CONSTRAINT trade_pkey PRIMARY KEY (id);
 
 
--- Completed on 2017-12-04 07:57:33
+-- Completed on 2017-12-04 20:32:06
 
 --
 -- PostgreSQL database dump complete
