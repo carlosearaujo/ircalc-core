@@ -1,19 +1,24 @@
 package com.ircalc.business;
 
-import com.ircalc.model.*;
-import com.ircalc.repository.FinalizedTradeRepository;
-import com.ircalc.repository.OpenTradeRepository;
-import com.ircalc.repository.VirtualTradeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.ircalc.repository.TradeRepository;
-import com.simplequery.GenericBusiness;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import javax.transaction.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.ircalc.model.CloseTime;
+import com.ircalc.model.FinalizedTrade;
+import com.ircalc.model.OpenTrade;
+import com.ircalc.model.Trade;
+import com.ircalc.model.VirtualTrade;
+import com.ircalc.repository.FinalizedTradeRepository;
+import com.ircalc.repository.OpenTradeRepository;
+import com.ircalc.repository.TradeRepository;
+import com.ircalc.repository.VirtualTradeRepository;
+import com.simplequery.GenericBusiness;
 
 /**@author carlos.araujo
    @since  17 de nov de 2017*/
@@ -28,7 +33,6 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	@Transactional
 	public Trade save(Trade newTrade) {
 		tradeRepository.save(newTrade);
-		clearTradesStatus();
 		processTrades();
 		return  newTrade;
 	}
@@ -36,13 +40,28 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	private void clearTradesStatus() {
 		openTradeRepository.deleteAll();
 		finalizedTradeRepository.deleteAll();
+		virtualTradeRepository.deleteAll();
 	}
 
-	private void processTrades() {
+	@Transactional
+	public void processTrades() {
+		clearTradesStatus();
 		List<Trade> orderedTrades = tradeRepository.findAllByOrderByDateAsc();
 		orderedTrades.forEach(trade -> {
+			finalizeOpenDayTradesAfterCurrentDate(trade);
 			processTrade(new VirtualTrade(trade), false);
 		});
+	}
+
+	private void finalizeOpenDayTradesAfterCurrentDate(Trade currentTrade) {
+		List<OpenTrade> openDayTrades = openTradeRepository.findByCloseTime(CloseTime.DAYTRADE);
+		for(OpenTrade openDayTrade : openDayTrades){
+			if(openDayTrade.getReferenceTrades().get(0).getDate().before((currentTrade.getDate()))){
+				openTradeRepository.delete(openDayTrade);
+				List<VirtualTrade> residualTrades = getResidualDayTrades(openDayTrade);
+				residualTrades.forEach(residualTrade -> processTrade(residualTrade, true));
+			}
+		}
 	}
 
 	private void processTrade(VirtualTrade virtualTrade, boolean isResidual) {
@@ -62,13 +81,6 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 
 	private OpenTrade getPriorityOpenTrade(VirtualTrade virtualTrade) {
 		OpenTrade openDayTrade = openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTrade().getTicket(), CloseTime.DAYTRADE);
-		openDayTrade.getReferenceTrades().forEach(openReference ->{
-			if(!openReference.getTrade().getDate().equals(virtualTrade)){
-				openTradeRepository.delete(openDayTrade);
-				List<VirtualTrade> residualTrades = getResidualDayTrades(openDayTrade);
-				residualTrades.forEach(residualTrade -> processTrade(residualTrade, true));
-			}
-		});
 		return openDayTrade != null ? openDayTrade : openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTrade().getTicket(), CloseTime.NORMAL);
 	}
 
@@ -78,22 +90,24 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		int i = 0;
 		List<VirtualTrade> residualTrades = new ArrayList<>();
 		while(openQuantity > 0){
-			if(i > 0){
-				VirtualTrade virtualTrade = openDayTrade.getReferenceTrades().get(i - 1);
-				virtualTradeRepository.delete(virtualTrade);
-				residualTrades.add(virtualTrade);
-			}
 			VirtualTrade virtualTrade = openDayTrade.getReferenceTrades().get(i);
-			virtualTrade.setQuantity(virtualTrade.getQuantity() - openQuantity);
-		}
-		VirtualTrade lastVirtualTrade = openDayTrade.getReferenceTrades().get(i);
-		if(lastVirtualTrade.getQuantity() != 0){
-			residualTrades.add(new VirtualTrade(lastVirtualTrade.getTrade(), lastVirtualTrade.getTrade().getQuantity() - lastVirtualTrade.getQuantity()));
+			openQuantity -= virtualTrade.getQuantity();
+			if(openQuantity >= 0){
+				virtualTradeRepository.delete(virtualTrade);
+				residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), virtualTrade.getQuantity()));
+			}
+			else if(openQuantity < 0){
+				residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), openQuantity + virtualTrade.getQuantity()));
+				virtualTrade.setQuantity(-openQuantity);
+			}
 		}
 		return residualTrades;
 	}
 
 	private void finalizeTrade(OpenTrade openTrade, VirtualTrade trade) {
+		if(openTrade.getCloseTime().equals(CloseTime.DAYTRADE)){
+			System.out.println("go");
+		}
 		FinalizedTrade finalizedTrade = new FinalizedTrade();
 		finalizedTrade.setReferencedTrades(new ArrayList<>(openTrade.getReferenceTrades()));
 		finalizedTrade.setCloseTrade(trade);
@@ -103,12 +117,18 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		if(openTrade.getOpenQuantity() == 0){
 			openTradeRepository.delete(openTrade);
 		}
+		else if(openTrade.getOpenQuantity() < 0){
+			//TODO Checar inversao de trade (Compra que vira venda ou vice versa por conta de residual
+		}
 	}
 
 	public void addOpenTrade(VirtualTrade virtualTrade, boolean isResidual){
 		OpenTrade newOpenTrade = new OpenTrade(virtualTrade);
-		Trade tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDate(virtualTrade.getTrade().getTicket(), virtualTrade.getTrade().getDate());
-		newOpenTrade.setCloseTime(tradeWithSameTicketAndDay == null || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
+		List<Trade> tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getTrade().getMarketDirectionComplement());
+		if(!tradeWithSameTicketAndDay.isEmpty()){
+			System.out.println("entrou daytrade");
+		}
+		newOpenTrade.setCloseTime(tradeWithSameTicketAndDay.isEmpty() || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
 		openTradeRepository.save(newOpenTrade);
 	}
 

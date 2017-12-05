@@ -1,7 +1,10 @@
 package com.ircalc.model;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Date;
 
 import javax.persistence.*;
 
@@ -9,20 +12,18 @@ import javax.persistence.*;
  * Created by Carlos on 04/12/2017.
  */
 @Entity
-@Getter @Setter
+@Getter @Setter @NoArgsConstructor
 @Table(name = "VIRTUAL_TRADE")
 public class VirtualTrade {
 
     @Id
-    @SequenceGenerator(name="sqc_virtual_trade", sequenceName="sqc_virtual_trade")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sqc_virtual_trade")
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @ManyToOne
     private Trade trade;
     @Column
     private Long quantity;
-
 
     public VirtualTrade(Trade trade, Long quantity) {
         this.trade = trade;
@@ -32,4 +33,12 @@ public class VirtualTrade {
     public VirtualTrade(Trade trade) {
         this(trade, trade.getQuantity());
     }
+
+	public Date getDate() {
+		return getTrade().getDate();
+	}
+
+	public String getTicket() {
+		return getTrade().getTicket();
+	}
 }

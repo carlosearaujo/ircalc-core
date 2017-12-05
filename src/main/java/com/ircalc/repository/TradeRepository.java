@@ -17,4 +17,6 @@ public interface TradeRepository extends JpaRepository<Trade, Long>  {
     List<Trade> findAllByOrderByDateAsc();
 
     Trade findByTicketAndDate(String ticket, Date date);
+
+	List<Trade> findByTicketAndDateAndMarketDirection(String ticket, Date date, MarketDirection marketDirection);
 }

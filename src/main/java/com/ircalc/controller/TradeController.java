@@ -39,4 +39,9 @@ public class TradeController extends GenericController<Trade> {
 		return business.getFinalizedTrades();
 	}
 	
+	@RequestMapping(value = "/test")
+	public void test(){
+		business.processTrades();
+	}
+	
 }

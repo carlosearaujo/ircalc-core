@@ -30,15 +30,14 @@ public class FinalizedTrade {
 	private static final Double DEFAULT_REGISTRATION_FEE_OPTION_DAYTRADE = (0.014 / 100);
 
     @Id
-    @SequenceGenerator(name="sqc_finalized_trade", sequenceName="sqc_finalized_trade")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sqc_finalized_trade")
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @OneToMany(fetch = FetchType.EAGER) 
+    @ManyToMany(fetch = FetchType.EAGER) 
     @JoinTable(name = "FINALIZED_TRADE_TRADE_REL")
     private List<VirtualTrade> referencedTrades;
     
-    @ManyToOne private VirtualTrade closeTrade;
+    @ManyToOne(cascade = CascadeType.PERSIST) private VirtualTrade closeTrade;
     
     @Column private CloseTime closeTime;
     
