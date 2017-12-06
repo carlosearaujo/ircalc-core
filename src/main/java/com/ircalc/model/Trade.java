@@ -11,12 +11,14 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**@author carlos.araujo
    @since  17 de nov de 2017*/
-@Entity @Getter @Setter
+@Entity @Getter @Setter @AllArgsConstructor @NoArgsConstructor
 @Table(name = "TRADE")
 public class Trade {
 
