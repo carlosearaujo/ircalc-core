@@ -1,12 +1,21 @@
 package com.ircalc.ircalccore;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
 import com.ircalc.business.TradeBusiness;
+import com.ircalc.model.CloseTime;
+import com.ircalc.model.FinalizedTrade;
 import com.ircalc.model.MarketDirection;
 import com.ircalc.model.MarketType;
 import com.ircalc.model.Trade;
+import com.ircalc.repository.FinalizedTradeRepository;
+import com.ircalc.repository.OpenTradeRepository;
 import com.ircalc.repository.TradeRepository;
+
+import org.apache.commons.beanutils.PropertyUtils;
+import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.List;
 
 /**@author carlos.araujo
    @since  5 de dez de 2017*/
@@ -23,30 +32,84 @@ import java.text.SimpleDateFormat;
 @SpringBootTest
 @ActiveProfiles("test")
 public class TradeBusinessTests {
+	
 
-	@Autowired
-	TradeBusiness tradeBusiness;
-	@Autowired
-	TradeRepository tradeRepository;
+	@Autowired private TradeRepository tradeRepo;
+	@Autowired private OpenTradeRepository openTradeRepo;
+	@Autowired private FinalizedTradeRepository finalizedTradeRepo;
 
-	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy");
+	@Autowired TradeBusiness tradeBusiness;
+	
+	@Before
+	public void clearDatabase(){
+		tradeRepo.deleteAll();
+	}
+	
+	private Trade buildTrade(Trade propertiesToChange) {
+		Trade trade = new Trade(null, new DateTime(2017, 5, 5,0,0).toDate(), "CMIG4", 12.85, 100L, MarketType.DEFAULT, MarketDirection.BUY, 1.5, 5D / 100);
+		if(propertiesToChange != null){
+			copyNotNullFields(trade, propertiesToChange);
+		}
+		return trade;
+	}
+
+	private List<Trade> buildDayTradeWithResidualList() {
+		return Arrays.asList(new Trade[]{buildTrade(new Trade(100)), buildTrade(new Trade(100)),
+													   buildTrade(new Trade(50, MarketDirection.SELL)),
+													   buildTrade(new Trade(new DateTime(2017, 6, 5, 0, 0).toDate()))});
+	}
+	
+	private void copyNotNullFields(Object target, Object source){
+		try {
+			PropertyUtils.describe(source).entrySet().stream().filter(e -> e.getValue() != null).filter(e -> ! e.getKey().equals("class"))
+	    	.forEach(e -> {
+		    	try {
+		    		PropertyUtils.setProperty(target, e.getKey(), e.getValue());
+		    	} catch (Exception ex) {
+		        }	
+	    	});
+		} catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+	}
 	
 	@Test
-	public void testeOne(){
+	public void testAddNewOpenTrade(){
+		Trade trade = buildTrade(null);
+		tradeRepo.save(trade);
 		tradeBusiness.processTrades();
-		Trade trade = new Trade();
-		try {
-			trade.setDate(simpleDateFormat.parse("01/01/2017"));
-			trade.setTicket("CMIG4");
-			trade.setPricePerUnit(12.85);
-			trade.setQuantity(100L);
-			trade.setMarketDirection(MarketDirection.BUY);
-			trade.setBrokerTax(1.5);
-			trade.setBrokerTaxFee(5D / 100);
-			tradeRepository.save(trade);
-		} catch (ParseException e) {
-			throw new RuntimeException(e);
-		}
-		assertTrue(false);
+		assertTrue(openTradeRepo.count() == 1);
+	}
+	
+	@Test
+	public void testTradeFinalization(){
+		tradeRepo.save(Arrays.asList(buildTrade(new Trade(MarketDirection.BUY)), buildTrade(new Trade(MarketDirection.SELL))));
+		tradeBusiness.processTrades();
+		
+		assertEquals(finalizedTradeRepo.count(), 1L);
+		assertEquals(openTradeRepo.count(), 0L);
+	}
+	
+	@Test
+	public void testDayTradeWithResidualNormal(){
+		tradeRepo.save(buildDayTradeWithResidualList());
+		testDayTradeWithResidual();
+	}
+	
+	@Test
+	public void testDayTradeWithResidualInverse(){
+		List<Trade> dayTradeTestList = buildDayTradeWithResidualList();
+		dayTradeTestList.set(1, dayTradeTestList.get(2));
+		tradeRepo.save(dayTradeTestList);
+		testDayTradeWithResidual();
+	}
+
+	private void testDayTradeWithResidual() {
+		tradeBusiness.processTrades();
+		List<FinalizedTrade> finalizedTrades = finalizedTradeRepo.findAll();
+		assertThat(finalizedTrades).hasSize(1).first().hasFieldOrPropertyWithValue("closeTime", CloseTime.DAYTRADE);
+		assertThat(finalizedTrades.get(0).getOpenVirtualTrades()).hasSize(1).first().hasFieldOrPropertyWithValue("quantity", 50L);
+		assertThat(finalizedTrades.get(0).getCloseTrade()).hasFieldOrPropertyWithValue("quantity", 50L);
+		assertThat(openTradeRepo.findAll()).hasSize(1).first().hasFieldOrPropertyWithValue("closeTime", CloseTime.NORMAL);
 	}
 }

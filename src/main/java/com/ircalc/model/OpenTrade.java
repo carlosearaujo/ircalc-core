@@ -27,8 +27,9 @@ public class OpenTrade {
     @Column
     private String ticket;
     @OneToMany(cascade = { CascadeType.PERSIST }, fetch = FetchType.EAGER)
-    @JoinTable(name =  "OPEN_TRADE_TRADE_REL")
-    private List<VirtualTrade> referenceTrades;
+    @JoinTable(name =  "OPEN_TRADE_TRADE_REL", joinColumns = @JoinColumn(name = "OPEN_TRADE_ID"), inverseJoinColumns = @JoinColumn(name = "VIRTUAL_TRADE_ID"),
+    		   foreignKey = @ForeignKey(name = "FK_OPEN_TRADE_TRADE_REL_OPEN_TRADE"), inverseForeignKey = @ForeignKey(name = "FK_OPEN_TRADE_TRADE_REL_VIRTUAL_TRADE"))
+    private List<VirtualTrade> openVirtualTrades;
     @Column
     private Long openQuantity;
     @Column
@@ -38,17 +39,17 @@ public class OpenTrade {
 
     public OpenTrade(VirtualTrade origin){
         ticket = origin.getTrade().getTicket();
-        referenceTrades = new ArrayList<>(Arrays.asList(new VirtualTrade[]{origin}));
+        openVirtualTrades = new ArrayList<>(Arrays.asList(new VirtualTrade[]{origin}));
         openQuantity = origin.getQuantity();
         marketDirection = origin.getTrade().getMarketDirection();
     }
 
     public void addNewReference(VirtualTrade virtualTrade) {
-    	if(CloseTime.DAYTRADE.equals(closeTime) && !virtualTrade.getDate().equals(referenceTrades.get(0).getDate())){
+    	if(CloseTime.DAYTRADE.equals(closeTime) && !virtualTrade.getDate().equals(openVirtualTrades.get(0).getDate())){
     		throw new RuntimeException("Trying add new reference with diferent date in daytrade type");
     	}
         openQuantity += virtualTrade.getQuantity();
-        referenceTrades.add(virtualTrade);
+        openVirtualTrades.add(virtualTrade);
     }
 
     public void decreaseOpenQuantity(Long quantity) {

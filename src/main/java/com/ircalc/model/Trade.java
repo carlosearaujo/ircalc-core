@@ -12,13 +12,12 @@ import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**@author carlos.araujo
    @since  17 de nov de 2017*/
-@Entity @Getter @Setter @AllArgsConstructor @NoArgsConstructor
+@Entity @Data @AllArgsConstructor @NoArgsConstructor
 @Table(name = "TRADE")
 public class Trade {
 
@@ -44,6 +43,23 @@ public class Trade {
 	@Column(nullable = false)
 	private Double brokerTaxFee;
 
+	public Trade(long quantity) {
+		this.quantity = quantity;
+	}
+
+	public Trade(int quantity, MarketDirection marketDirection) {
+		this(quantity);
+		this.marketDirection = marketDirection;
+	}
+
+	public Trade(Date date) {
+		this.date = date;
+	}
+
+	public Trade(MarketDirection marketDirection) {
+		this.marketDirection = marketDirection;
+	}
+
 	public Double priceAfterFees(Double marketFees){
 		return priceBeforeFees() + (getTotalFees(marketFees) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
 	}
@@ -65,10 +81,16 @@ public class Trade {
 	}
 
 	public Double priceBeforeFees(){
+		if(pricePerUnit == null || quantity == null){
+			return 0D;
+		}
 		return (pricePerUnit * quantity);
 	}
 
 	public Double getTotalBrokerCost(){
+		if(brokerTax == null || brokerTaxFee == null){
+			return 0D;
+		}
 		return brokerTax * (1 + brokerTaxFee);
 	}
 	
@@ -77,10 +99,6 @@ public class Trade {
 			return MarketDirection.SELL;
 		}
 		return MarketDirection.BUY;
-	}
-
-	public void setMarketType(MarketType marketType){
-		this.marketType = marketType;
 	}
 
 }

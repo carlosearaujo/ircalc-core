@@ -5,6 +5,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.util.List;
 
 /**
@@ -33,11 +37,14 @@ public class FinalizedTrade {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @ManyToMany(fetch = FetchType.EAGER) 
-    @JoinTable(name = "FINALIZED_TRADE_TRADE_REL")
-    private List<VirtualTrade> referencedTrades;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name =  "FINALIZED_TRADE_TRADE_REL", joinColumns = @JoinColumn(name = "FINALIZED_TRADE_ID"), inverseJoinColumns = @JoinColumn(name = "VIRTUAL_TRADE_ID"),
+	   foreignKey = @ForeignKey(name = "FK_FINALIZED_TRADE_TRADE_REL_FINALIZED_TRADE"), inverseForeignKey = @ForeignKey(name = "FK_FINALIZED_TRADE_TRADE_REL_VIRTUAL_TRADE"))
+    private List<VirtualTrade> openVirtualTrades;
     
-    @ManyToOne(cascade = CascadeType.PERSIST) private VirtualTrade closeTrade;
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private VirtualTrade closeTrade;
     
     @Column private CloseTime closeTime;
     
@@ -59,7 +66,7 @@ public class FinalizedTrade {
     public Double getReferencedTradesAVGPrice() {
         Long totalQuantity = 0L;
         Double totalCost = 0D;
-        for(VirtualTrade virtualTrade : referencedTrades){
+        for(VirtualTrade virtualTrade : openVirtualTrades){
             totalQuantity += virtualTrade.getQuantity();
             totalCost += virtualTrade.getTrade().priceAfterFees(getTotalMarketFees(virtualTrade.getTrade()));
         }

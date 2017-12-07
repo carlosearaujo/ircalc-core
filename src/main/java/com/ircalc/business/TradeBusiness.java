@@ -1,7 +1,6 @@
 package com.ircalc.business;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.transaction.Transactional;
@@ -56,7 +55,7 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	private void finalizeOpenDayTradesAfterCurrentDate(Trade currentTrade) {
 		List<OpenTrade> openDayTrades = openTradeRepository.findByCloseTime(CloseTime.DAYTRADE);
 		for(OpenTrade openDayTrade : openDayTrades){
-			if(openDayTrade.getReferenceTrades().get(0).getDate().before((currentTrade.getDate()))){
+			if(openDayTrade.getOpenVirtualTrades().get(0).getDate().before((currentTrade.getDate()))){
 				openTradeRepository.delete(openDayTrade);
 				List<VirtualTrade> residualTrades = getResidualDayTrades(openDayTrade);
 				residualTrades.forEach(residualTrade -> processTrade(residualTrade, true));
@@ -86,11 +85,11 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 
 	private List<VirtualTrade> getResidualDayTrades(OpenTrade openDayTrade) {
 		long openQuantity = openDayTrade.getOpenQuantity();
-		openDayTrade.getReferenceTrades().sort((o1, o2) -> o1.getId().compareTo(o2.getId()));
+		openDayTrade.getOpenVirtualTrades().sort((o1, o2) -> o2.getId().compareTo(o1.getId()));
 		int i = 0;
 		List<VirtualTrade> residualTrades = new ArrayList<>();
 		while(openQuantity > 0){
-			VirtualTrade virtualTrade = openDayTrade.getReferenceTrades().get(i);
+			VirtualTrade virtualTrade = openDayTrade.getOpenVirtualTrades().get(i);
 			openQuantity -= virtualTrade.getQuantity();
 			if(openQuantity >= 0){
 				virtualTradeRepository.delete(virtualTrade);
@@ -100,16 +99,14 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 				residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), openQuantity + virtualTrade.getQuantity()));
 				virtualTrade.setQuantity(-openQuantity);
 			}
+			i++;
 		}
 		return residualTrades;
 	}
 
 	private void finalizeTrade(OpenTrade openTrade, VirtualTrade trade) {
-		if(openTrade.getCloseTime().equals(CloseTime.DAYTRADE)){
-			System.out.println("go");
-		}
 		FinalizedTrade finalizedTrade = new FinalizedTrade();
-		finalizedTrade.setReferencedTrades(new ArrayList<>(openTrade.getReferenceTrades()));
+		finalizedTrade.setOpenVirtualTrades(new ArrayList<>(openTrade.getOpenVirtualTrades()));
 		finalizedTrade.setCloseTrade(trade);
 		finalizedTrade.setCloseTime(openTrade.getCloseTime());
 		finalizedTradeRepository.save(finalizedTrade);
@@ -125,9 +122,6 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	public void addOpenTrade(VirtualTrade virtualTrade, boolean isResidual){
 		OpenTrade newOpenTrade = new OpenTrade(virtualTrade);
 		List<Trade> tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getTrade().getMarketDirectionComplement());
-		if(!tradeWithSameTicketAndDay.isEmpty()){
-			System.out.println("entrou daytrade");
-		}
 		newOpenTrade.setCloseTime(tradeWithSameTicketAndDay.isEmpty() || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
 		openTradeRepository.save(newOpenTrade);
 	}
