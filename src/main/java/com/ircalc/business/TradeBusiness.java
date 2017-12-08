@@ -113,19 +113,22 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		return residualTrades;
 	}
 
-	private void finalizeTrade(OpenTrade openTrade, VirtualTrade trade) {
+	private void finalizeTrade(OpenTrade openTrade, VirtualTrade virtualTrade) {
 		FinalizedTrade finalizedTrade = new FinalizedTrade();
 		finalizedTrade.setOpenVirtualTrades(new ArrayList<>(openTrade.getOpenVirtualTrades()));
-		finalizedTrade.setCloseTrade(trade);
+		finalizedTrade.setCloseTrade(virtualTrade);
 		finalizedTrade.setCloseTime(openTrade.getCloseTime());
 		finalizedTradeRepository.save(finalizedTrade);
-		openTrade.decreaseOpenQuantity(trade.getQuantity());
-		if(openTrade.getOpenQuantity() == 0){
+		openTrade.decreaseOpenQuantity(virtualTrade.getQuantity());
+		if(openTrade.getOpenQuantity() <= 0){
 			openTradeRepository.delete(openTrade);
+			
+			if(openTrade.getOpenQuantity() < 0){
+				virtualTrade.setQuantity(virtualTrade.getQuantity() + openTrade.getOpenQuantity());
+				processTrade(new VirtualTrade(virtualTrade.getTrade(), -openTrade.getOpenQuantity()), false);
+			}
 		}
-		else if(openTrade.getOpenQuantity() < 0){
-			//TODO Checar inversao de trade (Compra que vira venda ou vice versa por conta de residual
-		}
+		
 	}
 
 	public void addOpenTrade(VirtualTrade virtualTrade, boolean isResidual){

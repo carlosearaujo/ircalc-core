@@ -114,7 +114,19 @@ public class TradeBusinessTests {
 
 		List<FinalizedTrade> finalizedTrades = finalizedTradeRepo.findAll();
 		assertThat(finalizedTrades).hasSize(1).first().hasFieldOrPropertyWithValue("closeTime", CloseTime.DAYTRADE);
-
+	}
+	
+	@Test
+	public void testDirectionChangeInOneTrade(){
+		Trade[] trades = new Trade[]{buildTrade(null), buildTrade(new Trade(200, MarketDirection.SELL))};
+		tradeRepo.save(Arrays.asList(trades));
+		tradeBusiness.processTrades();
+		
+		List<FinalizedTrade> finalizedTrades = finalizedTradeRepo.findAll();
+		assertThat(finalizedTrades).hasSize(1);
+		FinalizedTrade finalizedTrade = finalizedTrades.get(0);
+		assertThat(finalizedTrade.getCloseTrade()).hasFieldOrPropertyWithValue("quantity", 100L);
+		assertThat(openTradeRepo.findAll()).hasSize(1).first().hasFieldOrPropertyWithValue("marketDirection", MarketDirection.SELL);
 	}
 
 	private void testDayTradeWithResidual() {

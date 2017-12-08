@@ -100,10 +100,7 @@ public class Trade {
 	}
 	
 	public MarketDirection getMarketDirectionComplement(){
-		if(MarketDirection.BUY.equals(this.getMarketDirection())){
-			return MarketDirection.SELL;
-		}
-		return MarketDirection.BUY;
+		return MarketDirection.getComplement(marketDirection);
 	}
 
 }
