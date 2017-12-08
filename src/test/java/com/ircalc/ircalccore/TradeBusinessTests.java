@@ -15,14 +15,20 @@ import com.ircalc.repository.TradeRepository;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.joda.time.DateTime;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,19 +38,21 @@ import java.util.List;
 @SpringBootTest
 @ActiveProfiles("test")
 public class TradeBusinessTests {
-	
+
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	@Autowired private TradeRepository tradeRepo;
 	@Autowired private OpenTradeRepository openTradeRepo;
 	@Autowired private FinalizedTradeRepository finalizedTradeRepo;
 
 	@Autowired TradeBusiness tradeBusiness;
-	
-	@Before
-	public void clearDatabase(){
+
+	@After
+	public void clearTrades(){
 		tradeRepo.deleteAll();
 	}
-	
+
 	private Trade buildTrade(Trade propertiesToChange) {
 		Trade trade = new Trade(null, new DateTime(2017, 5, 5,0,0).toDate(), "CMIG4", 12.85, 100L, MarketType.DEFAULT, MarketDirection.BUY, 1.5, 5D / 100);
 		if(propertiesToChange != null){
