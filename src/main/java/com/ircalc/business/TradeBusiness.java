@@ -67,7 +67,12 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		OpenTrade ticketOpenTrade = getPriorityOpenTrade(virtualTrade);
 		if(ticketOpenTrade != null){
 			if(ticketOpenTrade.getMarketDirection().equals(virtualTrade.getTrade().getMarketDirection())){
-				ticketOpenTrade.addNewReference(virtualTrade);
+				if((hasPotentialDayTrade(virtualTrade) && !isResidual) && CloseTime.NORMAL.equals(ticketOpenTrade.getCloseTime())){
+					addOpenTrade(virtualTrade, isResidual);
+				}
+				else{
+					ticketOpenTrade.addNewReference(virtualTrade);
+				}
 			}
 			else{
 				finalizeTrade(ticketOpenTrade, virtualTrade);
@@ -121,9 +126,13 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 
 	public void addOpenTrade(VirtualTrade virtualTrade, boolean isResidual){
 		OpenTrade newOpenTrade = new OpenTrade(virtualTrade);
-		List<Trade> tradeWithSameTicketAndDay = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getTrade().getMarketDirectionComplement());
-		newOpenTrade.setCloseTime(tradeWithSameTicketAndDay.isEmpty() || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
+		newOpenTrade.setCloseTime(!hasPotentialDayTrade(virtualTrade) || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
 		openTradeRepository.save(newOpenTrade);
+	}
+
+	private boolean hasPotentialDayTrade(VirtualTrade virtualTrade) {
+		List<Trade> tradeWithSameTicketAndDayAndMarketDirectionComplement = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getTrade().getMarketDirectionComplement());
+		return !tradeWithSameTicketAndDayAndMarketDirectionComplement.isEmpty();
 	}
 
 	public List<FinalizedTrade> getFinalizedTrades(){

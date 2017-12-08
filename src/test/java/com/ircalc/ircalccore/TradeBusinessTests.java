@@ -30,6 +30,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.sql.DataSource;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**@author carlos.araujo
@@ -110,6 +111,20 @@ public class TradeBusinessTests {
 		dayTradeTestList.set(1, dayTradeTestList.get(2));
 		tradeRepo.save(dayTradeTestList);
 		testDayTradeWithResidual();
+	}
+
+	@Test
+	public void testDayTradeWithOpenTradeInSameDirectionFirst(){
+		Date dayTradeDate = new DateTime(2017, 10, 10, 0, 0).toDate();
+		Trade[] trades = new Trade[]{ buildTrade(new Trade(100)),
+									  buildTrade(new Trade(MarketDirection.BUY, dayTradeDate)),
+									  buildTrade(new Trade(MarketDirection.SELL, dayTradeDate))};
+		tradeRepo.save(Arrays.asList(trades));
+		tradeBusiness.processTrades();
+
+		List<FinalizedTrade> finalizedTrades = finalizedTradeRepo.findAll();
+		assertThat(finalizedTrades).hasSize(1).first().hasFieldOrPropertyWithValue("closeTime", CloseTime.DAYTRADE);
+
 	}
 
 	private void testDayTradeWithResidual() {

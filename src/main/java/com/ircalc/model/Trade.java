@@ -60,6 +60,11 @@ public class Trade {
 		this.marketDirection = marketDirection;
 	}
 
+	public Trade(MarketDirection marketDirection, Date date) {
+		this.marketDirection = marketDirection;
+		this.date = date;
+	}
+
 	public Double priceAfterFees(Double marketFees){
 		return priceBeforeFees() + (getTotalFees(marketFees) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
 	}
