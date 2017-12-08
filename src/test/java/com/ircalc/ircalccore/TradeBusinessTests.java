@@ -16,19 +16,12 @@ import com.ircalc.repository.TradeRepository;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -39,9 +32,6 @@ import java.util.List;
 @SpringBootTest
 @ActiveProfiles("test")
 public class TradeBusinessTests {
-
-	@PersistenceContext
-	private EntityManager entityManager;
 
 	@Autowired private TradeRepository tradeRepo;
 	@Autowired private OpenTradeRepository openTradeRepo;

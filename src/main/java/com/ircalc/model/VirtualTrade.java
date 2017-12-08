@@ -62,6 +62,10 @@ public class VirtualTrade {
 			return false;
 		return true;
 	}
+
+	public MarketDirection getMarketDirection() {
+		return trade.getMarketDirection();
+	}
 	
 	
 }
