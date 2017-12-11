@@ -17,4 +17,6 @@ public interface FinalizedTradeRepository extends JpaRepository<FinalizedTrade, 
 
 	@Query("Select f FROM FinalizedTrade f JOIN f.openVirtualTrades ref WHERE ref.id = :virtualTradeId")
 	List<FinalizedTrade> findAllWithReferenceId(@Param("virtualTradeId") Long virtualTradeId);
+
+	List<FinalizedTrade> findAllByCloseTrade_Trade_Ticket(String ticket);
 }

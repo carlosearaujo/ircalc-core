@@ -11,6 +11,8 @@ import javax.persistence.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * Created by Carlos on 04/12/2017.
  */
@@ -38,6 +40,7 @@ public class VirtualTrade {
         this(trade, trade.getQuantity());
     }
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy", locale = "pt-BR", timezone = "Brazil/East")
 	public Date getDate() {
 		return getTrade().getDate();
 	}

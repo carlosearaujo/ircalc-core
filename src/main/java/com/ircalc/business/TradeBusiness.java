@@ -83,11 +83,11 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		if(openDayTrade != null){
 			return openDayTrade;
 		}
+		else if((hasDayTradeOnTradeDate(virtualTrade) && !isResidual)){
+			return null;
+		}
 		else{
 			OpenTrade openNormalTrade = openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTrade().getTicket(), CloseTime.NORMAL);
-			if((hasDayTradeOnTradeDate(virtualTrade) && !isResidual)){
-				return null;
-			}
 			return openNormalTrade;
 		}
 	}
@@ -142,8 +142,11 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 		return !tradeWithSameTicketAndDayAndMarketDirectionComplement.isEmpty();
 	}
 
-	public List<FinalizedTrade> getFinalizedTrades(){
-		return finalizedTradeRepository.findAll();
+	public List<FinalizedTrade> getFinalizedTrades(String ticket){
+		if(ticket == null){
+			return finalizedTradeRepository.findAll();
+		}
+		return finalizedTradeRepository.findAllByCloseTrade_Trade_Ticket(ticket);
 	}
 
 	public List<OpenTrade> getOpenTrades() {
