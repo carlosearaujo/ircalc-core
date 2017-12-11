@@ -65,16 +65,17 @@ public class Trade {
 		this.date = date;
 	}
 
-	public Double pricePerUnitAfterFees(Double marketFees){
-		return (priceBeforeFees() + (getTotalFees(marketFees) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1))) / quantity;
+	public Double pricePerUnitAfterFees(Double marketFeesAliquot){
+		Double priceAfterFees =  priceBeforeFees() + (getTotalFees(marketFeesAliquot) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
+		return priceAfterFees / quantity;
 	}
 	
 	public Double getPriceAfterBrokerFees(){
 		return priceBeforeFees() + (getTotalBrokerCost() * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
 	}
 
-	public Double getTotalFees(Double marketFees){
-		return marketFees + getTotalBrokerCost();
+	public Double getTotalFees(Double marketFeesAliquot){
+		return (marketFeesAliquot * priceBeforeFees()) + getTotalBrokerCost();
 	}
 
 	public Double avgBeforeFees(){

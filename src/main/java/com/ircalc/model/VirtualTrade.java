@@ -68,7 +68,11 @@ public class VirtualTrade {
 	}
 
 
-	public Double pricePerUnitAfterFees(Double totalMarketFees) {
-		return trade.pricePerUnitAfterFees(totalMarketFees);
+	public Double pricePerUnitAfterFees(Double marketFeesAliquot) {
+		return trade.pricePerUnitAfterFees(marketFeesAliquot);
+	}
+	
+	public Double totalPriceAfterFees(Double marketFeesAliquot){
+		return trade.pricePerUnitAfterFees(marketFeesAliquot) * quantity;
 	}
 }
