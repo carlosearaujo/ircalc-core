@@ -145,4 +145,8 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	public List<FinalizedTrade> getFinalizedTrades(){
 		return finalizedTradeRepository.findAll();
 	}
+
+	public List<OpenTrade> getOpenTrades() {
+		return openTradeRepository.findAll();
+	}
 }

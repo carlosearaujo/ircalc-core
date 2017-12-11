@@ -66,6 +66,9 @@ public class VirtualTrade {
 	public MarketDirection getMarketDirection() {
 		return trade.getMarketDirection();
 	}
-	
-	
+
+
+	public Double pricePerUnitAfterFees(Double totalMarketFees) {
+		return trade.pricePerUnitAfterFees(totalMarketFees);
+	}
 }

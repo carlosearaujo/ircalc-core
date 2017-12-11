@@ -3,6 +3,7 @@ package com.ircalc.controller;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import com.ircalc.model.FinalizedTrade;
+import com.ircalc.model.OpenTrade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,6 +43,11 @@ public class TradeController extends GenericController<Trade> {
 	@RequestMapping(value = "/test")
 	public void test(){
 		business.processTrades();
+	}
+
+	@RequestMapping(value = "/getOpens")
+	public List<OpenTrade> getOpenTrades(){
+		return business.getOpenTrades();
 	}
 	
 }

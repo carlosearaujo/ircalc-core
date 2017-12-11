@@ -65,8 +65,8 @@ public class Trade {
 		this.date = date;
 	}
 
-	public Double priceAfterFees(Double marketFees){
-		return priceBeforeFees() + (getTotalFees(marketFees) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1));
+	public Double pricePerUnitAfterFees(Double marketFees){
+		return (priceBeforeFees() + (getTotalFees(marketFees) * (MarketDirection.BUY.equals(marketDirection) ? 1 : -1))) / quantity;
 	}
 	
 	public Double getPriceAfterBrokerFees(){
@@ -82,7 +82,7 @@ public class Trade {
 	}
 
 	public Double avgFinalPrice(Double marketFees){
-		return priceAfterFees(marketFees) / quantity;
+		return pricePerUnitAfterFees(marketFees) / quantity;
 	}
 
 	public Double priceBeforeFees(){

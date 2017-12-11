@@ -55,7 +55,7 @@ public class FinalizedTrade {
 	@Column(nullable = false)private Double registrationFeeAliquot;
 
     public Double getResult() {
-        Double result = closeTrade.getTrade().priceAfterFees(getTotalMarketFees(closeTrade.getTrade())) - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
+        Double result = (closeTrade.pricePerUnitAfterFees(getTotalMarketFees(closeTrade.getTrade())) * closeTrade.getQuantity()) - (getReferencedTradesAVGPrice() * closeTrade.getQuantity());
         return MarketDirection.BUY.equals(closeTrade.getTrade().getMarketDirection()) ? -result : result;
     }
 
@@ -64,11 +64,14 @@ public class FinalizedTrade {
     }
 
     public Double getReferencedTradesAVGPrice() {
+    	if(closeTrade.getTrade().getId().equals(26069L)){
+    		System.out.print("go");
+		}
         Long totalQuantity = 0L;
         Double totalCost = 0D;
         for(VirtualTrade virtualTrade : openVirtualTrades){
             totalQuantity += virtualTrade.getQuantity();
-            totalCost += virtualTrade.getTrade().priceAfterFees(getTotalMarketFees(virtualTrade.getTrade()));
+            totalCost += (virtualTrade.pricePerUnitAfterFees(getTotalMarketFees(virtualTrade.getTrade())) * virtualTrade.getQuantity());
         }
         return totalCost / totalQuantity;
     }
