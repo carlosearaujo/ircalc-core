@@ -102,7 +102,7 @@ ALTER TABLE ONLY virtual_trade
     ADD CONSTRAINT virtual_trade_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY finalized_trade_trade_rel
-    ADD CONSTRAINT fk_finalized_trade_trade_rel_finalized_trade FOREIGN KEY (finalized_trade_id) REFERENCES finalized_trade(id);
+    ADD CONSTRAINT fk_finalized_trade_trade_rel_finalized_trade FOREIGN KEY (finalized_trade_id) REFERENCES finalized_trade(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY finalized_trade_trade_rel
     ADD CONSTRAINT fk_finalized_trade_trade_rel_virtual_trade FOREIGN KEY (virtual_trade_id) REFERENCES virtual_trade(id) ON DELETE CASCADE;

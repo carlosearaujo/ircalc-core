@@ -1,7 +1,10 @@
 package com.ircalc.business;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.transaction.Transactional;
 
@@ -18,6 +21,7 @@ import com.ircalc.repository.OpenTradeRepository;
 import com.ircalc.repository.TradeRepository;
 import com.ircalc.repository.VirtualTradeRepository;
 import com.simplequery.GenericBusiness;
+import static com.ircalc.model.MarketDirection.*;
 
 /**@author carlos.araujo
    @since  17 de nov de 2017*/
@@ -45,26 +49,75 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 	@Transactional
 	public void processTrades() {
 		clearTradesStatus();
-		List<Trade> orderedTrades = tradeRepository.findAllByOrderByDateAsc();
-		orderedTrades.forEach(trade -> {
-			finalizeOpenDayTradesAfterCurrentDate(trade);
-			processTrade(new VirtualTrade(trade), false);
-		});
-	}
-
-	private void finalizeOpenDayTradesAfterCurrentDate(Trade currentTrade) {
-		List<OpenTrade> openDayTrades = openTradeRepository.findByCloseTime(CloseTime.DAYTRADE);
-		for(OpenTrade openDayTrade : openDayTrades){
-			if(openDayTrade.getOpenVirtualTrades().get(0).getDate().before((currentTrade.getDate()))){
-				openTradeRepository.delete(openDayTrade);
-				List<VirtualTrade> residualTrades = getResidualDayTrades(openDayTrade);
-				residualTrades.forEach(residualTrade -> processTrade(residualTrade, true));
+		List<Trade> orderedTrades = tradeRepository.findAllByOrderByDateAscTicketAsc();
+		Iterator<Trade> iterator = orderedTrades.iterator();
+		while(iterator.hasNext()){
+			Trade trade = iterator.next();
+			VirtualTrade virtualTrade = new VirtualTrade(trade);
+			if(hasDayTradeOnTradeDate(virtualTrade)){
+				List<Trade> dayTradeOperations = orderDayTradeOperations(extractDayTradeOperations(trade, iterator));
+				dayTradeOperations.forEach(dayTradeOperation ->{
+					processTrade(new VirtualTrade(dayTradeOperation, true));
+				});
+				finalizeResidualDayTrade(trade.getTicket());
+			}
+			else{
+				processTrade(new VirtualTrade(trade));
 			}
 		}
 	}
+	
+    private void finalizeResidualDayTrade(String ticket) {
+    	OpenTrade openDayTrade = openTradeRepository.findByTicketAndCloseTime(ticket, CloseTime.DAYTRADE);
+    	if(openDayTrade != null){
+    		openTradeRepository.delete(openDayTrade);
+        	List<VirtualTrade> residualTrades = getResidualDayTrades(openDayTrade);
+        	residualTrades.forEach(residualTrade -> processTrade(residualTrade));
+    	}
+    }
+    
+    private List<VirtualTrade> getResidualDayTrades(OpenTrade openDayTrade) {
+        long openQuantity = openDayTrade.getOpenQuantity();
+        int i = 0;
+        List<VirtualTrade> residualTrades = new ArrayList<>();
+        while(openQuantity > 0){
+            VirtualTrade virtualTrade = openDayTrade.getOpenVirtualTrades().get(i);
+            openQuantity -= virtualTrade.getQuantity();
+            if(openQuantity >= 0){
+                virtualTradeRepository.delete(virtualTrade);
+                residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), virtualTrade.getQuantity()));
+            }
+            else if(openQuantity < 0){
+                residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), openQuantity + virtualTrade.getQuantity()));
+                virtualTrade.setQuantity(-openQuantity);
+            }
+            i++;
+        }
+        return residualTrades;
+    }
 
-	private void processTrade(VirtualTrade virtualTrade, boolean isResidual) {
-		OpenTrade ticketOpenTrade = getPriorityOpenTrade(virtualTrade, isResidual);
+
+	private List<Trade> orderDayTradeOperations(List<Trade> operations) {
+		List<Trade> buyOperations = operations.stream().filter(trade -> trade.getMarketDirection().equals(BUY)).collect(Collectors.toList());
+		List<Trade> sellOperations = operations.stream().filter(trade -> trade.getMarketDirection().equals(SELL)).collect(Collectors.toList());
+		long buyOperationsQuantity = buyOperations.stream().mapToLong(o -> o.getQuantity()).sum();
+		long sellOperationsQuantity = buyOperations.stream().mapToLong(o -> o.getQuantity()).sum();
+		if(buyOperationsQuantity > sellOperationsQuantity){
+			return Stream.concat(buyOperations.stream(), sellOperations.stream()).collect(Collectors.toList());
+		}
+		return Stream.concat(sellOperations.stream(), buyOperations.stream()).collect(Collectors.toList());
+	}
+
+	private List<Trade> extractDayTradeOperations(Trade source, Iterator<Trade> iterator) {
+		List<Trade> dayTradeOperations = tradeRepository.findByTicketAndDate(source.getTicket(), source.getDate());
+		for(int i = 0 ; i < dayTradeOperations.size() - 1 ; i++){
+			iterator.next();
+		}
+		return dayTradeOperations;
+	}
+
+	private void processTrade(VirtualTrade virtualTrade) {
+		OpenTrade ticketOpenTrade = getPriorityOpenTrade(virtualTrade);
 		if(ticketOpenTrade != null){
 			if(ticketOpenTrade.getMarketDirection().equals(virtualTrade.getMarketDirection())){
 				ticketOpenTrade.addNewReference(virtualTrade);
@@ -74,43 +127,19 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 			}
 		}
 		else{
-			addOpenTrade(virtualTrade, isResidual);
+			addOpenTrade(virtualTrade);
 		}
 	}
 
-	private OpenTrade getPriorityOpenTrade(VirtualTrade virtualTrade, boolean isResidual) {
-		OpenTrade openDayTrade = openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTrade().getTicket(), CloseTime.DAYTRADE);
-		if(openDayTrade != null){
+	private OpenTrade getPriorityOpenTrade(VirtualTrade virtualTrade) {
+		OpenTrade openDayTrade = openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTicket(), CloseTime.DAYTRADE);
+		if(openDayTrade != null || virtualTrade.isDayTrade()){
 			return openDayTrade;
-		}
-		else if((hasDayTradeOnTradeDate(virtualTrade) && !isResidual)){
-			return null;
 		}
 		else{
 			OpenTrade openNormalTrade = openTradeRepository.findByTicketAndCloseTime(virtualTrade.getTrade().getTicket(), CloseTime.NORMAL);
 			return openNormalTrade;
 		}
-	}
-
-	private List<VirtualTrade> getResidualDayTrades(OpenTrade openDayTrade) {
-		long openQuantity = openDayTrade.getOpenQuantity();
-		openDayTrade.getOpenVirtualTrades().sort((o1, o2) -> o2.getId().compareTo(o1.getId()));
-		int i = 0;
-		List<VirtualTrade> residualTrades = new ArrayList<>();
-		while(openQuantity > 0){
-			VirtualTrade virtualTrade = openDayTrade.getOpenVirtualTrades().get(i);
-			openQuantity -= virtualTrade.getQuantity();
-			if(openQuantity >= 0){
-				virtualTradeRepository.delete(virtualTrade);
-				residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), virtualTrade.getQuantity()));
-			}
-			else if(openQuantity < 0){
-				residualTrades.add(new VirtualTrade(virtualTrade.getTrade(), openQuantity + virtualTrade.getQuantity()));
-				virtualTrade.setQuantity(-openQuantity);
-			}
-			i++;
-		}
-		return residualTrades;
 	}
 
 	private void finalizeTrade(OpenTrade openTrade, VirtualTrade virtualTrade) {
@@ -125,28 +154,21 @@ public class TradeBusiness extends GenericBusiness<Trade> {
 			
 			if(openTrade.getOpenQuantity() < 0){
 				virtualTrade.setQuantity(virtualTrade.getQuantity() + openTrade.getOpenQuantity());
-				processTrade(new VirtualTrade(virtualTrade.getTrade(), -openTrade.getOpenQuantity()), false);
+				processTrade(new VirtualTrade(virtualTrade.getTrade(), -openTrade.getOpenQuantity()));
 			}
 		}
 		
 	}
 
-	public void addOpenTrade(VirtualTrade virtualTrade, boolean isResidual){
+	public OpenTrade addOpenTrade(VirtualTrade virtualTrade){
 		OpenTrade newOpenTrade = new OpenTrade(virtualTrade);
-		newOpenTrade.setCloseTime(!hasDayTradeOnTradeDate(virtualTrade) || isResidual ? CloseTime.NORMAL : CloseTime.DAYTRADE);
-		openTradeRepository.save(newOpenTrade);
+		newOpenTrade.setCloseTime(virtualTrade.isDayTrade() ? CloseTime.DAYTRADE : CloseTime.NORMAL);
+		return openTradeRepository.save(newOpenTrade);
 	}
 
 	private boolean hasDayTradeOnTradeDate(VirtualTrade virtualTrade) {
-		List<Trade> tradeWithSameTicketAndDayAndMarketDirectionComplement = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getTrade().getMarketDirectionComplement());
+		List<Trade> tradeWithSameTicketAndDayAndMarketDirectionComplement = tradeRepository.findByTicketAndDateAndMarketDirection(virtualTrade.getTicket(), virtualTrade.getDate(), virtualTrade.getMarketDirectionComplement());
 		return !tradeWithSameTicketAndDayAndMarketDirectionComplement.isEmpty();
-	}
-
-	public List<FinalizedTrade> getFinalizedTrades(String ticket){
-		if(ticket == null){
-			return finalizedTradeRepository.findAll();
-		}
-		return finalizedTradeRepository.findAllByCloseTrade_Trade_Ticket(ticket);
 	}
 
 	public List<OpenTrade> getOpenTrades() {

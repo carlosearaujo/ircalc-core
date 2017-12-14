@@ -12,6 +12,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Created by Carlos on 04/12/2017.
@@ -30,6 +31,9 @@ public class VirtualTrade {
     private Trade trade;
     @Column
     private Long quantity;
+    
+    @Transient
+    private transient boolean isDayTrade;
 
     public VirtualTrade(Trade trade, Long quantity) {
         this.trade = trade;
@@ -39,6 +43,11 @@ public class VirtualTrade {
     public VirtualTrade(Trade trade) {
         this(trade, trade.getQuantity());
     }
+
+	public VirtualTrade(Trade trade, boolean isDayTrade) {
+		this(trade);
+		this.isDayTrade = isDayTrade;
+	}
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy", locale = "pt-BR", timezone = "Brazil/East")
 	public Date getDate() {
@@ -77,5 +86,10 @@ public class VirtualTrade {
 	
 	public Double totalPriceAfterFees(Double marketFeesAliquot){
 		return trade.pricePerUnitAfterFees(marketFeesAliquot) * quantity;
+	}
+
+	@JsonIgnore
+	public MarketDirection getMarketDirectionComplement() {
+		return trade.getMarketDirectionComplement();
 	}
 }

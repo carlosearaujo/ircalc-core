@@ -14,9 +14,9 @@ import java.util.List;
 @Repository
 public interface TradeRepository extends JpaRepository<Trade, Long>  {
 
-    List<Trade> findAllByOrderByDateAsc();
+    List<Trade> findAllByOrderByDateAscTicketAsc();
 
-    Trade findByTicketAndDate(String ticket, Date date);
+    List<Trade> findByTicketAndDate(String ticket, Date date);
 
 	List<Trade> findByTicketAndDateAndMarketDirection(String ticket, Date date, MarketDirection marketDirection);
 }
