@@ -117,4 +117,21 @@ public class FinalizedTrade {
 			}
 		}
 	}
+
+	public MarketType getMarketType() {
+		return getCloseTrade().getTrade().getMarketType();
+	}
+
+	public Double getTotalSell() {
+		Double totalSell = 0D;
+		if(MarketDirection.SELL.equals(closeTrade.getMarketDirection())){
+			totalSell += closeTrade.getCostBeforeFees();
+		}
+		else{
+			for(VirtualTrade openVirtualTrade : getOpenVirtualTrades()){
+				totalSell += openVirtualTrade.getCostBeforeFees();
+			}
+		}
+		return totalSell;
+	}
 }

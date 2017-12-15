@@ -92,4 +92,8 @@ public class VirtualTrade {
 	public MarketDirection getMarketDirectionComplement() {
 		return trade.getMarketDirectionComplement();
 	}
+
+	public Double getCostBeforeFees() {
+		return trade.avgBeforeFees() * quantity;
+	}
 }
